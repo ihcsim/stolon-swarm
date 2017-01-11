@@ -2,18 +2,29 @@
 
 include .env
 
-export ETCD_VERSION ETCD_TOKEN IMAGE_TAG_SENTINEL IMAGE_TAG_KEEPER IMAGE_TAG_PROXY STOLON_PROXY_PORT SWARM_MANAGER SWARM_WORKER_00 SWARM_WORKER_01 SWARM_WORKER_02 DO_REGION DO_SIZE
+export ETCD_VERSION ETCD_TOKEN IMAGE_TAG_SENTINEL IMAGE_TAG_KEEPER IMAGE_TAG_PROXY STOLON_PROXY_PORT STOLON_KEEPER_PG_SU_PASSWORDFILE STOLON_KEEPER_PG_REPL_PASSWORDFILE SWARM_MANAGER SWARM_WORKER_00 SWARM_WORKER_01 SWARM_WORKER_02 DO_REGION DO_SIZE
+
+VCS_REF = `git rev-parse --short HEAD`
 
 build: secrets sentinel keeper proxy
 
 sentinel:
-	docker build --rm -t ${IMAGE_TAG_SENTINEL} -f Dockerfile-Sentinel .
+	docker build --rm -t ${IMAGE_TAG_SENTINEL} \
+		--label org.label-schema.vcs-ref=${VCS_REF} \
+		--label org.label-schema.vcs-url="https://github.com/ihcsim/stolon-swarm"	\
+		-f Dockerfile-Sentinel .
 
 keeper:
-	docker build --rm -t ${IMAGE_TAG_KEEPER} -f Dockerfile-Keeper .
+	docker build --rm -t ${IMAGE_TAG_KEEPER} \
+		--label org.label-schema.vcs-ref=${VCS_REF} \
+		--label org.label-schema.vcs-url="https://github.com/ihcsim/stolon-swarm"	\
+		-f Dockerfile-Keeper .
 
 proxy:
-	docker build --rm -t ${IMAGE_TAG_PROXY} -f Dockerfile-Proxy .
+	docker build --rm -t ${IMAGE_TAG_PROXY} \
+		--label org.label-schema.vcs-ref=${VCS_REF} \
+		--label org.label-schema.vcs-url="https://github.com/ihcsim/stolon-swarm"	\
+		-f Dockerfile-Proxy .
 
 secrets:
 	rm -rf etc/secrets
@@ -61,3 +72,6 @@ swarm-stolon:
 
 swarm-clean:
 	swarm/clean.sh
+
+swarm-destroy:
+	DESTROY_MACHINES=true swarm/clean.sh

@@ -56,6 +56,18 @@ then
   exit 1
 fi
 
+# copy the secrets from localhost to vms
+node_secrets_path=/home/docker/stolon/secrets
+declare -a vms
+vms=(${SWARM_WORKER_00} ${SWARM_WORKER_01} ${SWARM_WORKER_02})
+for vm in "${vms[@]}"
+do
+  docker-machine ssh $vm mkdir -p $node_secrets_path
+  docker-machine scp etc/secrets/pgsql $vm:$node_secrets_path
+  docker-machine scp etc/secrets/pgsql-repl $vm:$node_secrets_path
+done
+
+# switch over to swarm-manager to create services
 eval `docker-machine env swarm-manager`
 
 network=stolon-network
@@ -85,5 +97,12 @@ do
 done
 
 docker service create --name sentinel --replicas 1 -e STSENTINEL_STORE_ENDPOINTS=$etcd_endpoints --network $network ${IMAGE_TAG_SENTINEL}
-docker service create --name keeper --replicas 3 -e STKEEPER_STORE_ENDPOINTS=$etcd_endpoints --network $network ${IMAGE_TAG_KEEPER}
+docker service create --name keeper --replicas 3 \
+  -e STKEEPER_STORE_ENDPOINTS=$etcd_endpoints \
+  -e STKEEPER_PG_SU_PASSWORDFILE=${STOLON_KEEPER_PG_SU_PASSWORDFILE} \
+  -e STKEEPER_PG_REPL_PASSWORDFILE=${STOLON_KEEPER_PG_REPL_PASSWORDFILE} \
+  --mount type=bind,src=$node_secrets_path/pgsql,dst=${STOLON_KEEPER_PG_SU_PASSWORDFILE} \
+  --mount type=bind,src=$node_secrets_path/pgsql-repl,dst=${STOLON_KEEPER_PG_REPL_PASSWORDFILE} \
+  --network $network \
+  ${IMAGE_TAG_KEEPER}
 docker service create --name proxy --replicas 1 -e STPROXY_STORE_ENDPOINTS=$etcd_endpoints --network $network -p ${STOLON_PROXY_PORT} ${IMAGE_TAG_PROXY}

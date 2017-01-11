@@ -14,16 +14,16 @@ All examples are tested with Docker 1.12.5, Docker Compose 1.9.0 and Stolon 0.5.
 ## Docker Images
 The following Dockerfiles can be used to build the Docker images of Stolon Sentinel, Keeper and Proxy:
 
-1. Dockerfile-Sentinel
-1. Dockerfile-Keeper
-1. Dockerfile-Proxy
+1. Dockerfile-Sentinel [![](https://images.microbadger.com/badges/version/isim/stolon-sentinel:0.5.0.svg)](https://microbadger.com/images/isim/stolon-sentinel:0.5.0 "Get your own version badge on microbadger.com") [![](https://images.microbadger.com/badges/commit/isim/stolon-sentinel:0.5.0.svg)](https://microbadger.com/images/isim/stolon-sentinel:0.5.0 "Get your own commit badge on microbadger.com") [![](https://images.microbadger.com/badges/image/isim/stolon-sentinel:0.5.0.svg)](https://microbadger.com/images/isim/stolon-sentinel:0.5.0 "Get your own image badge on microbadger.com")
+1. Dockerfile-Keeper [![](https://images.microbadger.com/badges/version/isim/stolon-keeper:0.5.0.svg)](https://microbadger.com/images/isim/stolon-keeper:0.5.0 "Get your own version badge on microbadger.com") [![](https://images.microbadger.com/badges/commit/isim/stolon-keeper:0.5.0.svg)](https://microbadger.com/images/isim/stolon-keeper:0.5.0 "Get your own commit badge on microbadger.com") [![](https://images.microbadger.com/badges/image/isim/stolon-keeper:0.5.0.svg)](https://microbadger.com/images/isim/stolon-keeper:0.5.0 "Get your own image badge on microbadger.com")
+1. Dockerfile-Proxy [![](https://images.microbadger.com/badges/version/isim/stolon-proxy:0.5.0.svg)](https://microbadger.com/images/isim/stolon-proxy:0.5.0 "Get your own version badge on microbadger.com") [![](https://images.microbadger.com/badges/commit/isim/stolon-proxy:0.5.0.svg)](https://microbadger.com/images/isim/stolon-proxy:0.5.0 "Get your own commit badge on microbadger.com") [![](https://images.microbadger.com/badges/image/isim/stolon-proxy:0.5.0.svg)](https://microbadger.com/images/isim/stolon-proxy:0.5.0 "Get your own image badge on microbadger.com")
 
 The `etc/init-spec.json` file provides a minimal default Stolon cluster specification. This file can be modified to change the cluster's initial specification. To build the Keeper images, two secret files must be provided at `etc/secrets/pgsql` and `etc/secrets/pgsql-repl`. The content of the `secrets` folder is git-ignored.
 
 A convenient `build` target is provided in the Makefile to build all the components' image and generate the needed secrets.
 
 ## Local Cluster
-This example sets up a Stolon cluster of 1 Sentinel instance, 3 Keeper instances, 1 Proxy instance and 3 etcd instances in your local environment. All containers are connected to a user-defined bridge network, named `stolon-network`.
+This example sets up a Stolon cluster of 1 Sentinel instance, 3 Keeper instances, 1 Proxy instance and 3 etcd instances in your local environment. All containers are connected to a user-defined bridge network, named `stolon-network`. You can find more information about Docker's user-defined networks [here](https://docs.docker.com/engine/userguide/networking/#/user-defined-networks).
 
 To get started, build the Docker images with:
 ```sh
@@ -396,6 +396,7 @@ du8t6w8c75rhdjidtnw8e2186  keeper.4      sorintlab/stolon-keeper:0.5.0  swarm-wo
 6k7skt591htszhc7qxmr9izf0  keeper.5      sorintlab/stolon-keeper:0.5.0  swarm-worker-01  Running        Running about a minute ago
 1c62gdxih05lkgcjs8g8oc0bc  keeper.6      sorintlab/stolon-keeper:0.5.0  swarm-worker-01  Running        Running about a minute ago
 ```
+Check the Sentinel's logs to see the new Keeper joins the cluster.
 
 To make sure that you can access the Stolon cluster,
 ```sh
@@ -405,7 +406,7 @@ Ports:
  Protocol = tcp
  TargetPort = 25432
  PublishedPort = 30000
-$ psql -u postgres -h <swarm-manager-ip> -p 30000
+$ psql -U postgres -h <swarm-manager-ip> -p 30000
 Password for user postgres: # can be obtained from your etc/secrets/pgsql
 psql (9.6.1)
 Type "help" for help.
@@ -487,6 +488,8 @@ postgres=# SELECT * FROM test;
   1 | value1
 (1 row)
 ```
+
+To remove all the services in the swarm, run `make swarm-clean`. This will stop and remove all etcd and stolon containers. By default, all the nodes aren't removed. To destroy all the nodes, use `make swarm-destroy`.
 
 ### Known Issues
 At the time of this writing, there are no ways to view the services' logs directly in Docker 1.12. Refer this issue [here](https://github.com/portainer/portainer/issues/334). The workaround involves using `docker service ps` to determine which node the service task is scheduled to and run `docker logs` on that node.

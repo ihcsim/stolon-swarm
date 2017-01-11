@@ -19,9 +19,14 @@ services:
       context: .
       dockerfile: Dockerfile-Keeper
     image: ${IMAGE_TAG_KEEPER}
+    volumes:
+      - ./etc/secrets/pgsql:${STOLON_KEEPER_PG_SU_PASSWORDFILE}
+      - ./etc/secrets/pgsql:${STOLON_KEEPER_PG_REPL_PASSWORDFILE}
     environment:
       - ETCD_TOKEN=${ETCD_TOKEN}
       - STKEEPER_STORE_ENDPOINTS=http://etcd-00:2379,http://etcd-01:2379,http://etcd-02:2379
+      - STKEEPER_PG_SU_PASSWORDFILE=${STOLON_KEEPER_PG_SU_PASSWORDFILE}
+      - STKEEPER_PG_REPL_PASSWORDFILE=${STOLON_KEEPER_PG_REPL_PASSWORDFILE}
     networks:
       - stolon-network
 
