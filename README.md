@@ -496,16 +496,16 @@ To remove all the services in the swarm, run `make swarm-clean`. This will stop 
 At the time of this writing, there are no ways to view the services' logs directly in Docker 1.12. Refer this issue [here](https://github.com/portainer/portainer/issues/334). The workaround involves using `docker service ps` to determine which node the service task is scheduled to and run `docker logs` on that node.
 
 ## Hyper.sh
-This example shows how to create a stolon cluster with [hyper.sh](https://hyper.sh/). Hyper.sh is a CaaS solution that runs Docker images on plain hypervisor, without needing to create VMs. The cluster consists of 3 etcd instances, 1 Sentinel instance, 3 Keeper instances and 1 Proxy instance.
+This example shows how to create a stolon cluster with [hyper.sh](https://hyper.sh/). Hyper.sh is a CaaS solution that runs Docker images on plain hypervisor without needing to create VMs. The cluster consists of 3 etcd instances, 1 Sentinel instance, 3 Keeper instances and 1 Proxy instance.
 
 **The containers created in this example aren't free. Refer to the hyper.sh [pricing](https://hyper.sh/pricing.html) for details.**
 
-To set up a Stolon cluster of hyper containers and services without floating IPs, run:
+To set up a Stolon cluster without floating IPs, run:
 ```sh
 $ ETCD_TOKEN=xxxxxxx make hyper-up
 ```
 
-If you would like to experiment with floating IP (extra charges apply, first manually allocate a new floating IP:
+If you would like to experiment with floating IP (extra charges apply), first manually allocate a new floating IP:
 ```sh
 $ hyper fip allocate -y
 xxx.xxx.xxx.xxx
@@ -532,7 +532,6 @@ You can access the Stolon cluster using:
 
 To make sure all the hyper services are up and running:
 ```sh
-$ hyper service ls
 $ hyper service ls
 Name                FIP                 Containers                        Status              Message
 sentinel                                87c85a31ee11                      active              Scaling completed
@@ -589,12 +588,12 @@ Type "help" for help.
 postgres=#
 ```
 
-If your cluster was created without assigning a floating IP to the proxy service, you can access the cluster by SSH into one of the keeper containers by using:
+If your cluster was created without assigning a floating IP to the proxy service, you can access the cluster by SSH into one of the keeper containers using:
 ```sh
 $ hyper exec -it <keeper-container-id> /bin/bash
 ```
 
-Now you can run some SQL query tests against the cluster:
+Now you can run some SQL queries to test the cluster:
 ```sh
 postgres=# CREATE TABLE test (id INT PRIMARY KEY NOT NULL, value TEXT NOT NULL);
 CREATE TABLE
