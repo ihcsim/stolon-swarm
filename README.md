@@ -9,6 +9,7 @@ All examples are tested with Docker 1.12.5, Docker Compose 1.9.0 and Stolon 0.5.
 * [Local Cluster](#local-cluster)
 * [Docker Compose](#docker-compose)
 * [Docker Swarm](#docker-swarm)
+* [Hyper.sh](#hyper-sh)
 * [License](#license)
 
 ## Docker Images
@@ -493,6 +494,158 @@ To remove all the services in the swarm, run `make swarm-clean`. This will stop 
 
 ### Known Issues
 At the time of this writing, there are no ways to view the services' logs directly in Docker 1.12. Refer this issue [here](https://github.com/portainer/portainer/issues/334). The workaround involves using `docker service ps` to determine which node the service task is scheduled to and run `docker logs` on that node.
+
+## Hyper.sh
+This example shows how to create a stolon cluster with [hyper.sh](https://hyper.sh/). Hyper.sh is a CaaS solution that runs Docker images on plain hypervisor, without needing to create VMs. The cluster consists of 3 etcd instances, 1 Sentinel instance, 3 Keeper instances and 1 Proxy instance.
+
+**The containers created in this example aren't free. Refer to the hyper.sh [pricing](https://hyper.sh/pricing.html) for details.**
+
+To set up a Stolon cluster of hyper containers and services without floating IPs, run:
+```sh
+$ ETCD_TOKEN=xxxxxxx make hyper-up
+```
+
+If you would like to experiment with floating IP (extra charges apply, first manually allocate a new floating IP:
+```sh
+$ hyper fip allocate -y
+xxx.xxx.xxx.xxx
+```
+Then run the `hyper-up` target with the `PROXY_FLOATING_IP` environmental variable:
+```sh
+$ ETCD_TOKEN=xxxxxxxx PROXY_FLOATING_IP=xxx.xxx.xxx.xxx make hyper-up
+....
+Service proxy is created.
+Attaching floating IP xxx.xxx.xxx.xxx to proxy service...
+.....
+Proxy service isn't ready yet...Sleeping for 3 seconds
+Proxy service isn't ready yet...Sleeping for 3 seconds
+Proxy service isn't ready yet...Sleeping for 3 seconds
+Proxy service isn't ready yet...Sleeping for 3 seconds
+Proxy service isn't ready yet...Sleeping for 3 seconds
+proxy
+
+
+Completed!
+You can access the Stolon cluster using:
+  psql -h xxx.xxx.xxx.xxx -p xxxxx -U xxxxxxx
+```
+
+To make sure all the hyper services are up and running:
+```sh
+$ hyper service ls
+$ hyper service ls
+Name                FIP                 Containers                        Status              Message
+sentinel                                87c85a31ee11                      active              Scaling completed
+keeper                                  84c23d31dc82, 313cfb0ba5f5, ...   active              Scaling completed
+proxy               xxx.xxx.xxx.xxx     eaed605b4a0f                      active              Scaling completed
+```
+
+To make sure all the hyper containers are up and running:
+```sh
+$ hyper ps
+CONTAINER ID        IMAGE                         COMMAND                  CREATED             STATUS              PORTS                                              NAMES                       PUBLIC IP
+a90cd72e577a        isim/stolon-keeper:0.5.0      "keeper-entrypoint.sh"   3 minutes ago       Up 3 minutes        0.0.0.0:5432->5432/tcp                             keeper-l3g8d51x828frd0f
+eaed605b4a0f        isim/stolon-proxy:0.5.0       "stolon-proxy"           3 minutes ago       Up 3 minutes        0.0.0.0:5432->5432/tcp, 0.0.0.0:25432->25432/tcp   proxy-xahpggbmlj0qbmbx
+313cfb0ba5f5        isim/stolon-keeper:0.5.0      "keeper-entrypoint.sh"   3 minutes ago       Up 3 minutes        0.0.0.0:5432->5432/tcp                             keeper-821pms24jggdidl9
+84c23d31dc82        isim/stolon-keeper:0.5.0      "keeper-entrypoint.sh"   3 minutes ago       Up 3 minutes        0.0.0.0:5432->5432/tcp                             keeper-9x4t266i0ic2ws9e
+87c85a31ee11        isim/stolon-sentinel:0.5.0    "stolon-sentinel"        4 minutes ago       Up 3 minutes        0.0.0.0:5432->5432/tcp                             sentinel-1s7tw9q34rd0qbdo
+49ca84203c5d        quay.io/coreos/etcd:v3.0.15   "etcd --name etcd-02 "   4 minutes ago       Up 4 minutes                                                           etcd-02
+d6b6d22342e3        quay.io/coreos/etcd:v3.0.15   "etcd --name etcd-01 "   4 minutes ago       Up 4 minutes                                                           etcd-01
+f40f3584add1        quay.io/coreos/etcd:v3.0.15   "etcd --name etcd-00 "   4 minutes ago       Up 4 minutes                                                           etcd-00
+```
+
+To make sure the etcd cluster is healthy:
+```sh
+$ hyper exec etcd-00 etcdctl cluster-health
+member 27b24e58c7ec7571 is healthy: got healthy result from http://etcd-02:2379
+member bdf0f064e925857c is healthy: got healthy result from http://etcd-00:2379
+member f4e3ac808e75037d is healthy: got healthy result from http://etcd-01:2379
+cluster is healthy
+```
+
+To scale the keeper service:
+```sh
+$ hyper service scale keeper=4
+```
+
+It might take a few minutes for the new replicas to complete their database set-up process. Follow the Sentinel logs to see the new standbys being added:
+```sh
+....
+[I] 2017-01-13T06:55:10Z sentinel.go:1009: added new standby db db=4f406eb0 keeper=e7b5df24
+[W] 2017-01-13T06:55:15Z sentinel.go:245: received db state for unexpected db uid receivedDB= db=4f406eb0
+[I] 2017-01-13T06:55:21Z sentinel.go:1009: added new standby db db=a031a309 keeper=e0967725
+[W] 2017-01-13T06:55:26Z sentinel.go:245: received db state for unexpected db uid receivedDB= db=a031a309
+[I] 2017-01-13T07:01:18Z sentinel.go:1009: added new standby db db=fdeb5922 keeper=7806772d # <--- new standby
+[W] 2017-01-13T07:01:23Z sentinel.go:245: received db state for unexpected db uid receivedDB= db=fdeb5922
+```
+
+To make sure that we can access the Stolon cluster:
+```sh
+$ psql -h <proxy-floating-ip> -p <proxy-service-port> -U postgres
+Password for user postgres: # can be obtained from your etc/secrets/pgsql
+psql (9.6.1)
+Type "help" for help.
+
+postgres=#
+```
+
+If your cluster was created without assigning a floating IP to the proxy service, you can access the cluster by SSH into one of the keeper containers by using:
+```sh
+$ hyper exec -it <keeper-container-id> /bin/bash
+```
+
+Now you can run some SQL query tests against the cluster:
+```sh
+postgres=# CREATE TABLE test (id INT PRIMARY KEY NOT NULL, value TEXT NOT NULL);
+CREATE TABLE
+postgres=# INSERT INTO test VALUES (1, 'value1');
+INSERT 0 1
+postgres=# SELECT * FROM test;
+ id | value
+----+--------
+  1 | value1
+(1 row)
+```
+
+To make sure the replication process is working correctly, you can stop the current master keeper container using `hyper stop <master-keeper-container-id>`. The master keeper container can easily be determined by looking at the logs of all the keeper containers using `hyper logs <keeper-container-id>`.
+
+You should see the Sentinel removes the old master keeper and picks up a new one:
+```sh
+$ hyper logs -f <sentinel-container-id>
+.....
+[I] 2017-01-13T07:03:04Z sentinel.go:844: removing old master db db=99edaa75
+[I] 2017-01-13T07:03:04Z sentinel.go:1009: added new standby db db=ed02ea03 keeper=56cf0275
+[W] 2017-01-13T07:03:09Z sentinel.go:245: received db state for unexpected db uid receivedDB=48d6b3e0 db=ed02ea03
+[E] 2017-01-13T07:14:39Z sentinel.go:234: no keeper info available db=4f406eb0 keeper=e7b5df24
+[E] 2017-01-13T07:14:44Z sentinel.go:234: no keeper info available db=4f406eb0 keeper=e7b5df24
+[E] 2017-01-13T07:14:50Z sentinel.go:234: no keeper info available db=4f406eb0 keeper=e7b5df24
+[E] 2017-01-13T07:14:55Z sentinel.go:234: no keeper info available db=4f406eb0 keeper=e7b5df24
+[E] 2017-01-13T07:15:00Z sentinel.go:234: no keeper info available db=4f406eb0 keeper=e7b5df24
+[I] 2017-01-13T07:15:00Z sentinel.go:743: master db is failed db=4f406eb0 keeper=e7b5df24
+[I] 2017-01-13T07:15:00Z sentinel.go:754: trying to find a new master to replace failed master
+[I] 2017-01-13T07:15:00Z sentinel.go:785: electing db as the new master db=fdeb5922 keeper=7806772d
+[E] 2017-01-13T07:15:05Z sentinel.go:234: no keeper info available db=4f406eb0 keeper=e7b5df24
+```
+
+Once the failover process is completed, you will be able to resume your `psql` session.
+```sh
+postgres=# SELECT * FROM test;
+server closed the connection unexpectedly
+        This probably means the server terminated abnormally
+        before or while processing the request.
+The connection to the server was lost. Attempting reset: Succeeded.
+postgres=# SELECT * FROM test;
+ id | value
+----+--------
+  1 | value1
+(1 row)
+```
+
+To remove all the hyper containers and services, run `make hyper-clean`. By default, all the volumes aren't removed. To delete all the volumes, use `PURGE_VOLUMES=true make hyper-clean`. **All floating IPs will have to be released manually.**
+
+### Known Issues:
+
+1. Detaching the floating IP from the Proxy service using `hyper service detach-fip proxy` results in an error. The workaround is to use the `hyper fip detach <container-id>` and `hyper fip release <floating-ip>` commands to manually release the floating IP.
 
 ## License
 Refer to the [LICENSE](LICENSE) file.
