@@ -1,0 +1,54 @@
+- type: serial
+  steps:
+    - name: bootstrap-test
+      service: bootstrap
+      command: "/bootstrap-test.sh"
+
+- type: parallel
+  encrypted_dockercfg_path: ci/encrypted/dockercfg
+  steps:
+    - type: parallel
+      service: sentinel
+      steps:
+        - name: push-sentinel-latest
+          type: push
+          tag: master
+          image_name: isim/stolon-sentinel
+          image_tag: latest
+          registry: https://index.docker.io/v1/
+        - name: push-sentinel-tag
+          type: push
+          exclude: master
+          image_name: isim/stolon-sentinel
+          image_tag: "{{.Branch}}-{{.CommitDescription}}"
+          registry: https://index.docker.io/v1/
+    - type: parallel
+      service: keeper
+      steps:
+        - name: push-keeper-latest
+          type: push
+          tag: master
+          image_name: isim/stolon-keeper
+          image_tag: latest
+          registry: https://index.docker.io/v1/
+        - name: push-keeper-tag
+          type: push
+          exclude: master
+          image_name: isim/stolon-keeper
+          image_tag: "{{.Branch}}-{{.CommitDescription}}"
+          registry: https://index.docker.io/v1/
+    - type: parallel
+      service: proxy
+      steps:
+        - name: push-proxy-latest
+          type: push
+          tag: master
+          image_name: isim/stolon-proxy
+          image_tag: latest
+          registry: https://index.docker.io/v1/
+        - name: push-proxy-tag
+          type: push
+          exclude: master
+          image_name: isim/stolon-proxy
+          image_tag: "{{.Branch}}-{{.CommitDescription}}"
+          registry: https://index.docker.io/v1/

@@ -1,4 +1,7 @@
 # stolon-swarm
+
+[![Codeship Status for ihcsim/stolon-swarm](https://app.codeship.com/projects/b9eb19c0-bc1b-0134-27a0-325dab4154b9/status?branch=master)](https://app.codeship.com/projects/195822)
+
 This project contains some examples on running a Dockerized Stolon cluster. [Stolon](https://github.com/sorintlab/stolon) is a cloud native PostgreSQL manager for PostgreSQL high availability. For an introduction to Stolon, take a look at [this post](https://sgotti.me/post/stolon-introduction/).
 
 All examples are tested with Docker 1.12.5, Docker Compose 1.9.0 and Stolon 0.5.0.

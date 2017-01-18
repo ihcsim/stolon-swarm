@@ -1,0 +1,4 @@
+FROM postgres:9.6.1
+
+COPY bin/stolonctl /usr/local/bin/stolonctl
+COPY ci/bootstrap-test.sh /bootstrap-test.sh
