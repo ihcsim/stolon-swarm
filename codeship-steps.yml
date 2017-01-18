@@ -10,45 +10,63 @@
     - type: parallel
       service: sentinel
       steps:
+        - name: push-sentinel
+          type: push
+          exclude: ^([0-9]+[.]*)+$
+          image_name: isim/stolon-sentinel
+          image_tag: "{{.Branch}}-{{.CommitDescription}}"
+          registry: https://index.docker.io/v1/
+        - name: push-sentinel-release
+          type: push
+          tag: ^([0-9]+[.]*)+$
+          image_name: isim/stolon-sentinel
+          image_tag: "{{.Branch}}"
+          registry: https://index.docker.io/v1/
         - name: push-sentinel-latest
           type: push
           tag: master
           image_name: isim/stolon-sentinel
           image_tag: latest
           registry: https://index.docker.io/v1/
-        - name: push-sentinel-tag
-          type: push
-          exclude: master
-          image_name: isim/stolon-sentinel
-          image_tag: "{{.Branch}}-{{.CommitDescription}}"
-          registry: https://index.docker.io/v1/
     - type: parallel
       service: keeper
       steps:
+        - name: push-keeper
+          type: push
+          exclude: ^([0-9]+[.]*)+$
+          image_name: isim/stolon-keeper
+          image_tag: "{{.Branch}}-{{.CommitDescription}}"
+          registry: https://index.docker.io/v1/
+        - name: push-keeper-release
+          type: push
+          tag: ^([0-9]+[.]*)+$
+          image_name: isim/stolon-keeper
+          image_tag: "{{.Branch}}"
+          registry: https://index.docker.io/v1/
         - name: push-keeper-latest
           type: push
           tag: master
           image_name: isim/stolon-keeper
           image_tag: latest
           registry: https://index.docker.io/v1/
-        - name: push-keeper-tag
-          type: push
-          exclude: master
-          image_name: isim/stolon-keeper
-          image_tag: "{{.Branch}}-{{.CommitDescription}}"
-          registry: https://index.docker.io/v1/
     - type: parallel
       service: proxy
       steps:
+        - name: push-proxy
+          type: push
+          exclude: ^([0-9]+[.]*)+$
+          image_name: isim/stolon-proxy
+          image_tag: "{{.Branch}}-{{.CommitDescription}}"
+          registry: https://index.docker.io/v1/
+        - name: push-proxy-release
+          type: push
+          tag: ^([0-9]+[.]*)+$
+          image_name: isim/stolon-proxy
+          image_tag: "{{.Branch}}-{{.CommitDescription}}"
+          registry: https://index.docker.io/v1/
         - name: push-proxy-latest
           type: push
           tag: master
           image_name: isim/stolon-proxy
           image_tag: latest
-          registry: https://index.docker.io/v1/
-        - name: push-proxy-tag
-          type: push
-          exclude: master
-          image_name: isim/stolon-proxy
-          image_tag: "{{.Branch}}-{{.CommitDescription}}"
           registry: https://index.docker.io/v1/
