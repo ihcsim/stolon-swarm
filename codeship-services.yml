@@ -18,7 +18,7 @@ sentinel:
     dockerfile: Dockerfile-Sentinel
     image: isim/stolon-sentinel
     args:
-      VCS_REF: c478c22
+      VCS_REF: 663fd87
   environment:
     - STSENTINEL_STORE_ENDPOINTS=http://etcd:2379
   links:
@@ -30,7 +30,7 @@ keeper:
     dockerfile: Dockerfile-Keeper
     image: isim/stolon-keeper
     args:
-      VCS_REF:
+      VCS_REF: 663fd87
   environment:
     - STKEEPER_STORE_ENDPOINTS=http://etcd:2379
   encrypted_env_file: ci/encrypted/stolon
@@ -43,7 +43,7 @@ proxy:
     dockerfile: Dockerfile-Proxy
     image: isim/stolon-proxy
     args:
-      VCS_REF: c478c22
+      VCS_REF: 663fd87
   environment:
     - STPROXY_STORE_ENDPOINTS=http://etcd:2379
   links:
